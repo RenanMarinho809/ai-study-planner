@@ -8,6 +8,8 @@ import { ResultView } from '@/components/result-view'
 import { CalendarView } from '@/components/calendar-view'
 import { Dashboard } from '@/components/dashboard'
 import { MobileNav } from '@/components/mobile-nav'
+import { LoginForm } from '@/components/login-form'
+import { RegisterForm } from '@/components/register-form'
 
 function AppContent() {
   const { currentView } = useApp()
@@ -24,6 +26,10 @@ function AppContent() {
         return <CalendarView />
       case 'dashboard':
         return <Dashboard />
+      case 'login':
+        return <LoginForm />
+      case 'register':
+        return <RegisterForm />
       default:
         return <LandingPage />
     }

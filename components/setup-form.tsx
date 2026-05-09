@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, Loader2, Sparkles, Target, Clock, Calendar, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Loader2, Sparkles, Target, Clock, Calendar, BarChart3, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useApp } from '@/lib/app-context'
 import { StudyLevel, StudyPlanFormData } from '@/lib/types'
@@ -14,6 +15,7 @@ export function SetupForm() {
   const { setCurrentView, createPlan, isLoading } = useApp()
   const [formData, setFormData] = useState<StudyPlanFormData>({
     objective: '',
+    description: '',
     dailyTime: 1,
     totalDuration: 3,
     level: 'iniciante'
@@ -85,7 +87,7 @@ export function SetupForm() {
               <div className="space-y-2">
                 <Label htmlFor="objective" className="flex items-center gap-2">
                   <Target className="h-4 w-4 text-primary" />
-                  Qual é seu objetivo de estudo?
+                  Qual e seu objetivo de estudo?
                 </Label>
                 <Input
                   id="objective"
@@ -97,6 +99,25 @@ export function SetupForm() {
                 {errors.objective && (
                   <p className="text-sm text-destructive">{errors.objective}</p>
                 )}
+              </div>
+
+              {/* Descricao detalhada para IA */}
+              <div className="space-y-2">
+                <Label htmlFor="description" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                  Descreva em detalhes o que voce quer aprender
+                </Label>
+                <Textarea
+                  id="description"
+                  placeholder="Conte para a IA mais detalhes sobre seu objetivo. Por exemplo: 'Quero aprender React do zero para conseguir um emprego como desenvolvedor frontend. Ja sei HTML, CSS e JavaScript basico. Tenho interesse especial em criar interfaces modernas e responsivas. Gostaria de aprender tambem sobre hooks, context API e integracao com APIs REST.'"
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="min-h-[140px] resize-none"
+                  rows={5}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Quanto mais detalhes voce fornecer, mais personalizado sera seu plano de estudos.
+                </p>
               </div>
 
               {/* Tempo diário */}

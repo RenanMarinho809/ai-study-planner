@@ -40,7 +40,28 @@ export interface UserStats {
 
 export interface StudyPlanFormData {
   objective: string
+  description: string
   dailyTime: number
   totalDuration: number
   level: StudyLevel
+}
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  avatar?: string
+  createdAt: Date
+}
+
+export interface LoginFormData {
+  email: string
+  password: string
+}
+
+export interface RegisterFormData {
+  name: string
+  email: string
+  password: string
+  confirmPassword: string
 }

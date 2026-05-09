@@ -64,20 +64,19 @@ export function LandingPage() {
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button 
               size="lg" 
-              onClick={() => setCurrentView('setup')}
+              onClick={() => setCurrentView('register')}
               className="gap-2 px-8"
             >
-              Começar agora
+              Criar conta gratis
               <ArrowRight className="h-4 w-4" />
             </Button>
             <Button 
               size="lg" 
               variant="outline"
-              onClick={() => setCurrentView('dashboard')}
+              onClick={() => setCurrentView('login')}
               className="gap-2"
             >
-              <TrendingUp className="h-4 w-4" />
-              Ver Dashboard
+              Ja tenho uma conta
             </Button>
           </div>
         </div>
@@ -218,15 +217,25 @@ export function LandingPage() {
               <p className="mb-8 max-w-xl text-lg opacity-90">
                 Crie seu primeiro plano de estudos personalizado em menos de um minuto.
               </p>
-              <Button 
-                size="lg" 
-                variant="secondary"
-                onClick={() => setCurrentView('setup')}
-                className="gap-2 px-8"
-              >
-                Criar meu plano
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+              <div className="flex flex-col items-center gap-4 sm:flex-row">
+                <Button 
+                  size="lg" 
+                  variant="secondary"
+                  onClick={() => setCurrentView('register')}
+                  className="gap-2 px-8"
+                >
+                  Criar conta gratis
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={() => setCurrentView('login')}
+                  className="gap-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                >
+                  Entrar
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

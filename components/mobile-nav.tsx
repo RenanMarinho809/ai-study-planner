@@ -1,20 +1,23 @@
 'use client'
 
-import { BookOpen, Calendar, Home, LayoutDashboard, Plus } from 'lucide-react'
+import { BookOpen, Calendar, Home, LayoutDashboard, Plus, LogIn, User } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
 import { cn } from '@/lib/utils'
 
 export function MobileNav() {
-  const { currentView, setCurrentView, currentPlan } = useApp()
+  const { currentView, setCurrentView, currentPlan, isAuthenticated } = useApp()
 
   const navItems = [
-    { id: 'landing', label: 'Início', icon: Home },
+    { id: 'landing', label: 'Inicio', icon: Home },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'setup', label: 'Novo', icon: Plus, isAction: true },
     ...(currentPlan ? [
       { id: 'result', label: 'Plano', icon: BookOpen },
-      { id: 'calendar', label: 'Calendário', icon: Calendar },
+      { id: 'calendar', label: 'Calendario', icon: Calendar },
     ] : []),
+    ...(isAuthenticated ? [] : [
+      { id: 'login', label: 'Entrar', icon: LogIn },
+    ]),
   ] as const
 
   return (

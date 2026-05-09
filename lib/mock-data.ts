@@ -125,11 +125,12 @@ export const mockUserStats: UserStats = {
   totalProgress: 68
 }
 
-export const mockExistingPlans: StudyPlan[] = [
-  generateMockPlan('Aprender JavaScript', 2, 2, 'iniciante'),
-  generateMockPlan('Dominar TypeScript', 1.5, 1, 'intermediario'),
-]
+const jsPlan = generateMockPlan('Aprender JavaScript', 2, 2, 'iniciante')
+jsPlan.id = 'plan-js-001'
+jsPlan.progress = 85
 
-// Atualiza progresso dos planos existentes
-mockExistingPlans[0].progress = 85
-mockExistingPlans[1].progress = 45
+const tsPlan = generateMockPlan('Dominar TypeScript', 1.5, 1, 'intermediario')
+tsPlan.id = 'plan-ts-002'
+tsPlan.progress = 45
+
+export const mockExistingPlans: StudyPlan[] = [jsPlan, tsPlan]

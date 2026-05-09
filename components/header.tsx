@@ -1,11 +1,13 @@
 'use client'
 
-import { BookOpen, Calendar, LayoutDashboard, Home, Sparkles } from 'lucide-react'
+import { BookOpen, Calendar, LayoutDashboard, Home, Sparkles, LogIn, LogOut, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useApp } from '@/lib/app-context'
 
 export function Header() {
-  const { currentView, setCurrentView, currentPlan } = useApp()
+  const { currentView, setCurrentView, currentPlan, user, isAuthenticated, logout } = useApp()
 
   const navItems = [
     { id: 'landing', label: 'Início', icon: Home },
@@ -46,14 +48,52 @@ export function Header() {
           ))}
         </nav>
 
-        <Button 
-          onClick={() => setCurrentView('setup')}
-          className="gap-2"
-          size="sm"
-        >
-          <Sparkles className="h-4 w-4" />
-          <span className="hidden sm:inline">Novo Plano</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={() => setCurrentView('setup')}
+            className="gap-2"
+            size="sm"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">Novo Plano</span>
+          </Button>
+
+          {isAuthenticated && user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <Avatar className="h-7 w-7">
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      {user.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden sm:inline">{user.name}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem className="gap-2">
+                  <User className="h-4 w-4" />
+                  Meu Perfil
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="gap-2 text-destructive">
+                  <LogOut className="h-4 w-4" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button 
+              variant="outline"
+              onClick={() => setCurrentView('login')}
+              className="gap-2"
+              size="sm"
+            >
+              <LogIn className="h-4 w-4" />
+              <span className="hidden sm:inline">Entrar</span>
+            </Button>
+          )}
+        </div>
       </div>
     </header>
   )
