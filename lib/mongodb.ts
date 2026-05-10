@@ -9,7 +9,7 @@ class MongoNetworkAccessError extends Error {
 }
 
 function getMongoUri() {
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.MONGODB_URI!
   if (uri) return uri;
   if (process.env.NODE_ENV === 'production') {
     throw new Error('MONGODB_URI não configurada no ambiente de produção');
