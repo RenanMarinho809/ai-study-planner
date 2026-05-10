@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/icon.svg" alt="Logo AI Study Planner" width="100" />
+ 
   <h1>AI Study Planner 🧠📚</h1>
   <p>Uma plataforma inteligente para geração de planos de estudo personalizados utilizando Inteligência Artificial.</p>
   
