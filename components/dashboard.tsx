@@ -1,15 +1,51 @@
 'use client'
 
-import { BookOpen, Calendar, Flame, Target, TrendingUp, Clock, Plus, ChevronRight } from 'lucide-react'
+import { BookOpen, Calendar, Flame, Target, TrendingUp, Clock, Plus, ChevronRight, Trash2, Edit2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { useApp } from '@/lib/app-context'
 import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import { Input } from '@/components/ui/input'
+import { toast } from 'sonner'
 
 export function Dashboard() {
-  const { userStats, plans, selectPlan, setCurrentView } = useApp()
+  const { userStats, plans, selectPlan, setCurrentView, deletePlan, updatePlan } = useApp()
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null)
+  const [editObjective, setEditObjective] = useState('')
+
+  const handleEditClick = (e: React.MouseEvent, planId: string, objective: string) => {
+    e.stopPropagation()
+    setEditingPlanId(planId)
+    setEditObjective(objective)
+  }
+
+  const handleSaveEdit = async (e: React.MouseEvent, planId: string) => {
+    e.stopPropagation()
+    if (editObjective.trim()) {
+      try {
+        await updatePlan(planId, { objective: editObjective })
+        toast.success('Plano atualizado com sucesso!')
+      } catch (error: any) {
+        toast.error(error.message || 'Erro ao atualizar plano')
+      }
+    }
+    setEditingPlanId(null)
+  }
+
+  const handleDeleteClick = async (e: React.MouseEvent, planId: string) => {
+    e.stopPropagation()
+    if (confirm('Tem certeza que deseja deletar este plano de estudo?')) {
+      try {
+        await deletePlan(planId)
+        toast.success('Plano deletado com sucesso!')
+      } catch (error: any) {
+        toast.error(error.message || 'Erro ao deletar plano')
+      }
+    }
+  }
 
   const stats = [
     {
@@ -166,20 +202,39 @@ export function Dashboard() {
                   const totalTime = plan.dailyTime * plan.totalDuration * 30
 
                   return (
-                    <button
+                    <div
                       key={plan.id}
                       onClick={() => selectPlan(plan.id)}
-                      className="group w-full rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/50 hover:shadow-md"
+                      className="group relative w-full rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/50 hover:shadow-md cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="mb-2 flex flex-wrap items-center gap-2">
-                            <h3 className="font-semibold text-foreground group-hover:text-primary">
-                              {plan.objective}
-                            </h3>
-                            <Badge className={levelColor[plan.level]} variant="secondary">
-                              {levelLabel[plan.level]}
-                            </Badge>
+                            {editingPlanId === plan.id ? (
+                              <div className="flex w-full items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                <Input
+                                  value={editObjective}
+                                  onChange={(e) => setEditObjective(e.target.value)}
+                                  className="h-8 flex-1"
+                                  autoFocus
+                                />
+                                <Button size="sm" onClick={(e) => handleSaveEdit(e, plan.id)}>
+                                  Salvar
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingPlanId(null); }}>
+                                  Cancelar
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                <h3 className="font-semibold text-foreground group-hover:text-primary">
+                                  {plan.objective}
+                                </h3>
+                                <Badge className={levelColor[plan.level]} variant="secondary">
+                                  {levelLabel[plan.level]}
+                                </Badge>
+                              </>
+                            )}
                           </div>
                           
                           <div className="mb-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -205,9 +260,27 @@ export function Dashboard() {
                           </div>
                         </div>
 
-                        <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            onClick={(e) => handleEditClick(e, plan.id, plan.objective)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={(e) => handleDeleteClick(e, plan.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+                        </div>
                       </div>
-                    </button>
+                    </div>
                   )
                 })}
               </div>

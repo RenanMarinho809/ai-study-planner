@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
 import { StudyPlan, UserStats, StudyPlanFormData, TaskStatus, User, LoginFormData, RegisterFormData } from './types'
 import { generateMockPlan, mockUserStats, mockExistingPlans } from './mock-data'
 
@@ -16,6 +16,8 @@ interface AppContextType {
   user: User | null
   isAuthenticated: boolean
   createPlan: (data: StudyPlanFormData) => Promise<void>
+  updatePlan: (planId: string, data: Partial<StudyPlan>) => Promise<void>
+  deletePlan: (planId: string) => Promise<void>
   updateTaskStatus: (planId: string, taskId: string, status: TaskStatus) => void
   selectPlan: (planId: string) => void
   login: (data: LoginFormData) => Promise<void>
@@ -26,8 +28,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [currentView, setCurrentView] = useState<AppView>('landing')
-  const [plans, setPlans] = useState<StudyPlan[]>(mockExistingPlans)
+  const [currentView, setCurrentView] = useState<AppView>('login')
+  const [plans, setPlans] = useState<StudyPlan[]>([])
   const [currentPlan, setCurrentPlan] = useState<StudyPlan | null>(null)
   const [userStats, setUserStats] = useState<UserStats>(mockUserStats)
   const [isLoading, setIsLoading] = useState(false)
@@ -35,27 +37,186 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const isAuthenticated = user !== null
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchPlans()
+    } else {
+      setPlans([])
+    }
+  }, [isAuthenticated])
+
+  const fetchPlans = async () => {
+    try {
+      const response = await fetch('/api/study-plans')
+      if (response.ok) {
+        const data = await response.json()
+        const formattedPlans = data.map((plan: any) => ({
+          ...plan,
+          createdAt: new Date(plan.createdAt),
+          modules: plan.modules.map((module: any) => ({
+            ...module,
+            tasks: module.tasks.map((task: any) => ({
+              ...task,
+              date: new Date(task.date)
+            }))
+          }))
+        }))
+        setPlans(formattedPlans)
+        setUserStats(prev => ({ ...prev, totalPlans: formattedPlans.length }))
+      }
+    } catch (error) {
+      console.error('Erro ao buscar planos:', error)
+    }
+  }
+
   const createPlan = async (data: StudyPlanFormData) => {
     setIsLoading(true)
     
-    // Simula delay de geração da IA
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    const newPlan = generateMockPlan(
-      data.objective,
-      data.dailyTime,
-      data.totalDuration,
-      data.level
-    )
-    
-    setPlans(prev => [...prev, newPlan])
-    setCurrentPlan(newPlan)
-    setUserStats(prev => ({ ...prev, totalPlans: prev.totalPlans + 1 }))
-    setIsLoading(false)
-    setCurrentView('result')
+    try {
+      const response = await fetch('/api/generate-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Falha ao gerar plano'
+        const responseText = await response.text()
+        try {
+          const errorData = JSON.parse(responseText)
+          errorMessage = errorData.error || errorMessage
+          
+          // Se houver detalhes da falha de geração, logar para debug
+          if (errorData.details) {
+            console.error('Detalhes da falha de geração:', errorData.details)
+          }
+        } catch (e) {
+          console.error('Erro na resposta (não JSON):', responseText)
+        }
+        throw new Error(errorMessage)
+      }
+
+      const responseText = await response.text()
+      let newPlan: StudyPlan
+
+      try {
+        newPlan = JSON.parse(responseText)
+      } catch (e) {
+        console.error('Resposta não é JSON:', responseText)
+        throw new Error('A API retornou uma resposta inválida (não JSON)')
+      }
+      
+      // Converter strings de data de volta para objetos Date
+      const formattedPlan: StudyPlan = {
+        ...newPlan,
+        createdAt: new Date(newPlan.createdAt),
+        modules: newPlan.modules.map(module => ({
+          ...module,
+          tasks: module.tasks.map(task => ({
+            ...task,
+            date: new Date(task.date)
+          }))
+        }))
+      }
+      
+      setPlans(prev => [...prev, formattedPlan])
+      setCurrentPlan(formattedPlan)
+      setUserStats(prev => ({ ...prev, totalPlans: prev.totalPlans + 1 }))
+      setCurrentView('result')
+    } catch (error) {
+      console.error('Erro ao criar plano:', error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const updateTaskStatus = (planId: string, taskId: string, status: TaskStatus) => {
+  const deletePlan = async (planId: string) => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/study-plans/${planId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Falha ao deletar plano'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (e) {
+          // Se não for JSON, usa o status text
+          if (response.status === 404) errorMessage = 'Plano não encontrado'
+          else if (response.status === 400) errorMessage = 'ID de plano inválido'
+        }
+        throw new Error(errorMessage)
+      }
+
+      setPlans(prev => prev.filter(p => p.id !== planId))
+      if (currentPlan?.id === planId) {
+        setCurrentPlan(null)
+        setCurrentView('dashboard')
+      }
+      setUserStats(prev => ({ ...prev, totalPlans: Math.max(0, prev.totalPlans - 1) }))
+    } catch (error) {
+      console.error('Erro ao deletar plano:', error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const updatePlan = async (planId: string, data: Partial<StudyPlan>) => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/study-plans/${planId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Falha ao atualizar plano'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (e) {
+          if (response.status === 404) errorMessage = 'Plano não encontrado'
+          else if (response.status === 400) errorMessage = 'ID de plano inválido'
+        }
+        throw new Error(errorMessage)
+      }
+
+      const updatedPlan = await response.json()
+      const formattedPlan = {
+        ...updatedPlan,
+        createdAt: new Date(updatedPlan.createdAt),
+        modules: updatedPlan.modules.map((module: any) => ({
+          ...module,
+          tasks: module.tasks.map((task: any) => ({
+            ...task,
+            date: new Date(task.date)
+          }))
+        }))
+      }
+
+      setPlans(prev => prev.map(p => p.id === planId ? formattedPlan : p))
+      if (currentPlan?.id === planId) {
+        setCurrentPlan(formattedPlan)
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar plano:', error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const updateTaskStatus = async (planId: string, taskId: string, status: TaskStatus) => {
+    // Atualização otimista no frontend
+    let updatedPlanData: StudyPlan | null = null;
+    
     setPlans(prev => prev.map(plan => {
       if (plan.id !== planId) return plan
       
@@ -71,7 +232,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const completedTasks = allTasks.filter(t => t.status === 'concluido').length
       const progress = Math.round((completedTasks / allTasks.length) * 100)
       
-      return { ...plan, modules: updatedModules, progress }
+      updatedPlanData = { ...plan, modules: updatedModules, progress };
+      return updatedPlanData;
     }))
 
     // Atualiza currentPlan se necessário
@@ -89,6 +251,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const progress = Math.round((completedTasks / allTasks.length) * 100)
         return { ...prev, modules: updatedModules, progress }
       })
+    }
+
+    // Persiste no backend
+    if (updatedPlanData) {
+      try {
+        await fetch(`/api/study-plans/${planId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            modules: (updatedPlanData as StudyPlan).modules,
+            progress: (updatedPlanData as StudyPlan).progress 
+          }),
+        });
+      } catch (error) {
+        console.error('Erro ao sincronizar status da tarefa:', error);
+      }
     }
 
     // Atualiza stats
@@ -147,7 +325,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null)
-    setCurrentView('landing')
+    setCurrentView('login')
   }
 
   return (
@@ -161,6 +339,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated,
       createPlan,
+      updatePlan,
+      deletePlan,
       updateTaskStatus,
       selectPlan,
       login,

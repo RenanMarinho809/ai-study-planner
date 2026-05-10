@@ -10,9 +10,10 @@ export function Header() {
   const { currentView, setCurrentView, currentPlan, user, isAuthenticated, logout } = useApp()
 
   const navItems = [
-    { id: 'landing', label: 'Início', icon: Home },
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    ...(currentPlan ? [
+    ...(isAuthenticated ? [
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ] : []),
+    ...(currentPlan && isAuthenticated ? [
       { id: 'result', label: 'Plano', icon: BookOpen },
       { id: 'calendar', label: 'Calendário', icon: Calendar },
     ] : []),
@@ -22,7 +23,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <button 
-          onClick={() => setCurrentView('landing')}
+          onClick={() => setCurrentView(isAuthenticated ? 'dashboard' : 'login')}
           className="flex items-center gap-2 transition-opacity hover:opacity-80"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -49,14 +50,16 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button 
-            onClick={() => setCurrentView('setup')}
-            className="gap-2"
-            size="sm"
-          >
-            <Sparkles className="h-4 w-4" />
-            <span className="hidden sm:inline">Novo Plano</span>
-          </Button>
+          {isAuthenticated && (
+            <Button 
+              onClick={() => setCurrentView('setup')}
+              className="gap-2"
+              size="sm"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden sm:inline">Novo Plano</span>
+            </Button>
+          )}
 
           {isAuthenticated && user ? (
             <DropdownMenu>

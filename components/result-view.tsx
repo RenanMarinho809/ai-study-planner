@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpen, Calendar, CheckCircle2, Circle, Clock, PlayCircle, Target } from 'lucide-react'
+import { BookOpen, Calendar, CheckCircle2, Circle, Clock, PlayCircle, Target, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -16,7 +16,13 @@ const statusConfig: Record<TaskStatus, { label: string; icon: typeof Circle; col
 }
 
 export function ResultView() {
-  const { currentPlan, updateTaskStatus, setCurrentView } = useApp()
+  const { currentPlan, updateTaskStatus, setCurrentView, deletePlan } = useApp()
+
+  const handleDelete = async () => {
+    if (confirm('Tem certeza que deseja deletar este plano de estudo?')) {
+      await deletePlan(currentPlan!.id)
+    }
+  }
 
   if (!currentPlan) {
     return (
@@ -96,6 +102,14 @@ export function ResultView() {
               >
                 <Calendar className="h-4 w-4" />
                 Ver calendário
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="icon"
+                onClick={handleDelete}
+                title="Deletar plano"
+              >
+                <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           </div>

@@ -10,9 +10,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useApp } from '@/lib/app-context'
 import { StudyLevel, StudyPlanFormData } from '@/lib/types'
+import { useToast } from '@/hooks/use-toast'
 
 export function SetupForm() {
   const { setCurrentView, createPlan, isLoading } = useApp()
+  const { toast } = useToast()
   const [formData, setFormData] = useState<StudyPlanFormData>({
     objective: '',
     description: '',
@@ -46,7 +48,19 @@ export function SetupForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (validate()) {
-      await createPlan(formData)
+      try {
+        await createPlan(formData)
+        toast({
+          title: 'Sucesso!',
+          description: 'Seu plano de estudos foi gerado com sucesso.',
+        })
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao gerar plano',
+          description: error.message || 'Ocorreu um erro inesperado. Tente novamente.',
+        })
+      }
     }
   }
 
