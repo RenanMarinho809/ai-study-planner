@@ -36,8 +36,12 @@ export async function PATCH(
     return NextResponse.json(updatedPlan);
   } catch (error: any) {
     console.error('Erro ao atualizar plano:', error);
+    const message =
+      error?.code === 'MONGODB_NETWORK_ACCESS'
+        ? error.message
+        : 'Erro ao atualizar plano';
     return NextResponse.json(
-      { error: 'Erro ao atualizar plano' },
+      { error: message },
       { status: 500 }
     );
   }
@@ -70,8 +74,12 @@ export async function DELETE(
     return NextResponse.json({ message: 'Plano deletado com sucesso' });
   } catch (error: any) {
     console.error('Erro ao deletar plano:', error);
+    const message =
+      error?.code === 'MONGODB_NETWORK_ACCESS'
+        ? error.message
+        : 'Erro ao deletar plano';
     return NextResponse.json(
-      { error: 'Erro ao deletar plano' },
+      { error: message },
       { status: 500 }
     );
   }

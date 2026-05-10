@@ -9,8 +9,12 @@ export async function GET() {
     return NextResponse.json(plans);
   } catch (error: any) {
     console.error('Erro ao buscar planos:', error);
+    const message =
+      error?.code === 'MONGODB_NETWORK_ACCESS'
+        ? error.message
+        : 'Erro ao buscar planos';
     return NextResponse.json(
-      { error: 'Erro ao buscar planos' },
+      { error: message },
       { status: 500 }
     );
   }
