@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast'
 export function SetupForm() {
   const { setCurrentView, createPlan, isLoading } = useApp()
   const { toast } = useToast()
+  const descriptionMaxLength = 800
   const [formData, setFormData] = useState<StudyPlanFormData>({
     objective: '',
     description: '',
@@ -31,6 +32,10 @@ export function SetupForm() {
       newErrors.objective = 'Informe seu objetivo de estudo'
     } else if (formData.objective.length < 3) {
       newErrors.objective = 'O objetivo deve ter pelo menos 3 caracteres'
+    }
+
+    if (formData.description.length > descriptionMaxLength) {
+      newErrors.description = `A descrição deve ter no máximo ${descriptionMaxLength} caracteres`
     }
     
     if (formData.dailyTime <= 0) {
@@ -128,10 +133,15 @@ export function SetupForm() {
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   className="min-h-[140px] resize-none"
                   rows={5}
+                  maxLength={descriptionMaxLength}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Quanto mais detalhes voce fornecer, mais personalizado sera seu plano de estudos.
-                </p>
+                {errors.description ? (
+                  <p className="text-sm text-destructive">{errors.description}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Quanto mais detalhes voce fornecer, mais personalizado sera seu plano de estudos. ({formData.description.length}/{descriptionMaxLength})
+                  </p>
+                )}
               </div>
 
               {/* Tempo diário */}

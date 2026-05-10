@@ -1,6 +1,5 @@
 import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
-import { StudyLevel } from '@/lib/types';
 import dbConnect from '@/lib/mongodb';
 import StudyPlan from '@/models/StudyPlan';
 
@@ -17,47 +16,74 @@ export async function POST(req: Request) {
     const safeDailyTime = Math.min(Math.max(Number(dailyTime) || 1, 1), 24);
     const safeTotalDuration = Math.min(Math.max(Number(totalDuration) || 1, 1), 12); // Cap at 12 months for safety
 
-    const apiKey = process.env.GROK_API_KEY;
+    const apiKey = process.env.GROK_API_KEY || process.env.GROQ_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'GROK_API_KEY não configurada' },
+        { error: 'GROK_API_KEY/GROQ_API_KEY não configurada' },
+        { status: 500 }
+      );
+    }
+
+    const baseURL = process.env.GROK_BASE_URL || process.env.GROQ_BASE_URL;
+    if (!baseURL) {
+      return NextResponse.json(
+        { error: 'GROK_BASE_URL/GROQ_BASE_URL não configurada' },
         { status: 500 }
       );
     }
 
     const grok = new OpenAI({
       apiKey: apiKey,
-      baseURL: process.env.GROK_BASE_URL!
+      baseURL
     });
 
+    const sanitizedObjective = String(objective).trim().slice(0, 180);
+    const sanitizedDescription = String(description || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 800);
+
+    const maxModules = Math.min(safeTotalDuration, 12);
+    const maxTasksPerModule = safeDailyTime <= 1 ? 4 : safeDailyTime <= 2 ? 5 : 6;
+
     const systemPrompt = `Você é um especialista em educação. Crie um plano de estudos personalizado em JSON.
-ESTRUTURA:
+Você deve retornar APENAS um objeto JSON válido, sem texto adicional, sem formatação markdown (como \`\`\`json).
+A estrutura ESPERADA é:
 {
-  "objective": "${objective}",
-  "dailyTime": ${safeDailyTime},
-  "totalDuration": ${safeTotalDuration},
-  "level": "${level}",
+  "objective": "string",
+  "dailyTime": number,
+  "totalDuration": number,
+  "level": "iniciante|intermediario|avancado",
   "createdAt": "${new Date().toISOString()}",
   "progress": 0,
   "modules": [{
     "id": "m1",
-    "title": "...",
-    "description": "...",
+    "title": "Título",
+    "description": "Descrição",
     "week": 1,
     "tasks": [{
       "id": "t1",
-      "title": "...",
-      "description": "...",
+      "title": "Título",
+      "description": "Descrição",
       "estimatedTime": 60,
       "status": "pendente",
-      "date": "ISO8601",
+      "date": "${new Date().toISOString()}",
       "moduleId": "m1"
     }]
   }]
 }
-REGRAS: 1. Apenas JSON. 2. Cobre ${safeTotalDuration} meses em módulos semanais. 3. Respeite ${safeDailyTime}h/dia. 4. IDs curtos. 5. Datas ISO8601 começando em ${new Date().toISOString()}. 6. Descrições concisas.`;
+REGRAS:
+1. APENAS JSON VÁLIDO.
+2. Preencha objective/dailyTime/totalDuration/level exatamente conforme o pedido do usuário.
+3. Cobre ${safeTotalDuration} meses em módulos.
+4. IMPORTANTE: Para evitar cortes, crie no MÁXIMO ${maxModules} módulos no total.
+5. Para evitar JSON enorme: cada módulo deve ter no máximo ${maxTasksPerModule} tasks.
+6. Respeite ${safeDailyTime}h/dia.
+7. IDs curtos.
+8. Datas ISO8601.
+9. Descrições curtas e diretas.`;
 
-    const userPrompt = `Objetivo: ${objective}\nDescrição: ${description?.substring(0, 500)}\nTempo: ${safeDailyTime}h/dia\nDuração: ${safeTotalDuration} meses\nNível: ${level}`;
+    const userPrompt = `Objetivo: ${sanitizedObjective}\nDescrição: ${sanitizedDescription}\nTempo: ${safeDailyTime}h/dia\nDuração: ${safeTotalDuration} meses\nNível: ${level}\nIMPORTANTE: Retorne apenas o JSON.`;
 
     const response = await grok.chat.completions.create({
       model: process.env.GROK_MODEL || 'grok-2',
@@ -65,9 +91,8 @@ REGRAS: 1. Apenas JSON. 2. Cobre ${safeTotalDuration} meses em módulos semanais
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      response_format: { type: 'json_object' },
       temperature: 0.5,
-      max_tokens: 3000,
+      max_tokens: 4096,
     });
 
     const content = response.choices[0].message.content;
@@ -75,7 +100,16 @@ REGRAS: 1. Apenas JSON. 2. Cobre ${safeTotalDuration} meses em módulos semanais
       throw new Error('Falha ao obter resposta do Grok');
     }
 
-    const planData = JSON.parse(content);
+    // Clean up potential markdown formatting
+    let cleanedContent = content.trim();
+    const jsonMatch = cleanedContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      cleanedContent = jsonMatch[1].trim();
+    } else {
+      cleanedContent = cleanedContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+    }
+
+    const planData = JSON.parse(cleanedContent);
     
     // Remover o ID gerado pela IA para deixar o MongoDB gerar um novo
     delete planData.id;
@@ -92,11 +126,15 @@ REGRAS: 1. Apenas JSON. 2. Cobre ${safeTotalDuration} meses em módulos semanais
       code: error.code,
       details: error.details || error.failed_generation,
     });
+
+    const rawDetails = error.failed_generation || error.details || null;
+    const safeDetails =
+      typeof rawDetails === 'string' ? rawDetails.slice(0, 2000) : null;
     
     return NextResponse.json(
       { 
         error: error.message || 'Erro interno do servidor',
-        details: error.failed_generation || null
+        details: safeDetails
       },
       { status: error.status || 500 }
     );
