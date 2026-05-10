@@ -30,58 +30,34 @@ export async function POST(req: Request) {
       baseURL: process.env.GROK_BASE_URL!
     });
 
-    const systemPrompt = `
-      Você é um especialista em educação e planejamento de estudos.
-      Sua tarefa é criar um plano de estudos detalhado e personalizado estritamente em formato JSON.
-      
-      O JSON deve seguir exatamente esta estrutura:
-      {
-        "id": "plan-1",
-        "objective": "Objetivo do usuário",
-        "dailyTime": ${safeDailyTime},
-        "totalDuration": ${safeTotalDuration},
-        "level": "${level}",
-        "createdAt": "${new Date().toISOString()}",
-        "progress": 0,
-        "modules": [
-          {
-            "id": "module-1",
-            "title": "Título do Módulo",
-            "description": "Descrição do que será aprendido",
-            "week": 1,
-            "tasks": [
-              {
-                "id": "task-1",
-                "title": "Título da Tarefa",
-                "description": "O que fazer",
-                "estimatedTime": 60,
-                "status": "pendente",
-                "date": "2024-05-10T10:00:00.000Z",
-                "moduleId": "module-1"
-              }
-            ]
-          }
-        ]
-      }
+    const systemPrompt = `Você é um especialista em educação. Crie um plano de estudos personalizado em JSON.
+ESTRUTURA:
+{
+  "objective": "${objective}",
+  "dailyTime": ${safeDailyTime},
+  "totalDuration": ${safeTotalDuration},
+  "level": "${level}",
+  "createdAt": "${new Date().toISOString()}",
+  "progress": 0,
+  "modules": [{
+    "id": "m1",
+    "title": "...",
+    "description": "...",
+    "week": 1,
+    "tasks": [{
+      "id": "t1",
+      "title": "...",
+      "description": "...",
+      "estimatedTime": 60,
+      "status": "pendente",
+      "date": "ISO8601",
+      "moduleId": "m1"
+    }]
+  }]
+}
+REGRAS: 1. Apenas JSON. 2. Cobre ${safeTotalDuration} meses em módulos semanais. 3. Respeite ${safeDailyTime}h/dia. 4. IDs curtos. 5. Datas ISO8601 começando em ${new Date().toISOString()}. 6. Descrições concisas.`;
 
-      REGRAS:
-      1. Retorne APENAS o objeto JSON.
-      2. Não inclua blocos de código markdown (como \`\`\`json).
-      3. O plano deve cobrir ${safeTotalDuration} meses.
-      4. Divida o conteúdo em módulos semanais (~4 semanas por mês).
-      5. Distribua as tarefas respeitando o tempo diário de ${safeDailyTime} horas.
-      6. O nível de dificuldade deve ser ${level}.
-      7. As datas das tarefas devem começar a partir de hoje (${new Date().toLocaleDateString()}) e seguir cronologicamente.
-    `;
-
-    const userPrompt = `
-      Crie um plano de estudos para:
-      Objetivo: ${objective}
-      Descrição adicional: ${description}
-      Tempo disponível: ${safeDailyTime} horas por dia
-      Duração total: ${safeTotalDuration} meses
-      Nível atual: ${level}
-    `;
+    const userPrompt = `Objetivo: ${objective}\nDescrição: ${description?.substring(0, 500)}\nTempo: ${safeDailyTime}h/dia\nDuração: ${safeTotalDuration} meses\nNível: ${level}`;
 
     const response = await grok.chat.completions.create({
       model: process.env.GROK_MODEL || 'grok-2',
@@ -90,8 +66,8 @@ export async function POST(req: Request) {
         { role: 'user', content: userPrompt },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.7,
-      max_tokens: 4096,
+      temperature: 0.5,
+      max_tokens: 3000,
     });
 
     const content = response.choices[0].message.content;
