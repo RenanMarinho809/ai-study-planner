@@ -4,7 +4,7 @@ import { createContext, useContext, useState, ReactNode, useEffect } from 'react
 import { StudyPlan, UserStats, StudyPlanFormData, TaskStatus, User, LoginFormData, RegisterFormData } from './types'
 import { generateMockPlan, mockUserStats, mockExistingPlans } from './mock-data'
 
-type AppView = 'landing' | 'setup' | 'result' | 'calendar' | 'dashboard' | 'login' | 'register'
+type AppView = 'landing' | 'setup' | 'result' | 'calendar' | 'dashboard' | 'profile' | 'login' | 'register'
 
 interface AppContextType {
   currentView: AppView

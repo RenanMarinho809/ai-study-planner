@@ -15,7 +15,9 @@ export function MobileNav() {
       { id: 'result', label: 'Plano', icon: BookOpen },
       { id: 'calendar', label: 'Calendario', icon: Calendar },
     ] : []),
-    ...(isAuthenticated ? [] : [
+    ...(isAuthenticated ? [
+      { id: 'profile', label: 'Perfil', icon: User },
+    ] : [
       { id: 'login', label: 'Entrar', icon: LogIn },
     ]),
   ] as const

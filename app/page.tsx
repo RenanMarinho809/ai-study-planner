@@ -10,6 +10,7 @@ import { Dashboard } from '@/components/dashboard'
 import { MobileNav } from '@/components/mobile-nav'
 import { LoginForm } from '@/components/login-form'
 import { RegisterForm } from '@/components/register-form'
+import { ProfilePage } from '@/components/profile-page'
 
 function AppContent() {
   const { currentView } = useApp()
@@ -26,6 +27,8 @@ function AppContent() {
         return <CalendarView />
       case 'dashboard':
         return <Dashboard />
+      case 'profile':
+        return <ProfilePage />
       case 'login':
         return <LoginForm />
       case 'register':

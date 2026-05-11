@@ -74,7 +74,7 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem className="gap-2">
+                <DropdownMenuItem onClick={() => setCurrentView('profile')} className="gap-2">
                   <User className="h-4 w-4" />
                   Meu Perfil
                 </DropdownMenuItem>
