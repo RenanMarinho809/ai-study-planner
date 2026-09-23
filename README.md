@@ -124,9 +124,9 @@ Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
 Gostou do projeto ou quer bater um papo sobre Front-end e tecnologia? Me chame no LinkedIn!
 
-- **LinkedIn:** [Seu Nome](https://linkedin.com/in/seu-perfil)
-- **E-mail:** [seu-email@exemplo.com](mailto:seu-email@exemplo.com)
-- **Portfólio:** [seusite.com](https://seusite.com)
+- **LinkedIn:** [Seu Nome](https://www.linkedin.com/in/renanmarinho809/)
+- **E-mail:** [seu-email@exemplo.com](renanmarinho809@gmail.com)
+- **Portfólio:** [seusite.com](https://renan-portfolio-nu.vercel.app)
 
 <br/>
 
